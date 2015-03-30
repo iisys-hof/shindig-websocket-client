@@ -1,0 +1,317 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+                      Neo4j WebSocket backend for Apache Shindig
+
+  What is it?
+  -----------
+
+  The client part of an Apache Shindig Backend using a Neo4j Websocket Server
+  with custom server side routines.
+
+
+  System Requirements
+  -------------------
+
+  Java:
+    1.7 or above.
+
+  Apache Shindig:
+    2.5.0-update1
+
+  Neo4j WebSocket common resources for Apache Shindig:
+    shindig-websocket-common
+
+  Neo4j WebSocket common resources:
+    neo4j-websocket-common
+
+  Neo4j WebSocket Client:
+    neo4j-websocket-client
+
+  Neo4j WebSocket Server with Apache Shindig WebSocket Server Routines:
+    neo4j-websocket-server
+    shindig-websocket-serverroutines
+
+  Apache Maven (for building)
+    3.x
+
+
+  Installing Neo4j WebSocket backend for Apache Shindig
+  -----------------------------------------------------
+
+  For an installation instructions for the Neo4j WebSocket Client and Neo4j
+  WebSocket common resources, see the client's documentation.
+
+  The client's sources can be found at
+  "https://github.com/iisys-hof/neo4j-websocket-client"
+  and can be downloaded using git by executing
+  'git clone https://github.com/iisys-hof/neo4j-websocket-client.git'.
+  Its README file contains installation instructions for the common library.
+
+  Installing to local Maven repository:
+
+    1. Download the source code of "shindig-websocket-common" and extract it
+      The projects's sources can be found at
+      "https://github.com/iisys-hof/shindig-websocket-common"
+      and can be downloaded using git by executing
+      'git clone https://github.com/iisys-hof/shindig-websocket-common.git'.
+
+    2. Open a terminal and enter the root directory containing the file pom.xml
+
+    3. execute 'mvn install'
+
+    4. Download the source code of "shindig-websocket-client" and extract it
+
+    5. Open a terminal and enter the root directory containing the file pom.xml
+
+    6. execute 'mvn install'
+
+  Alternatively, you can use precompiled jars.
+
+
+  Prerequisites:
+
+    For the WebSocket backend to work, you will need a running instance of
+    Neo4j WebSocket Server with Apache Shindig WebSocket Server Routines.
+
+    The server's sources can be found at
+    "https://github.com/iisys-hof/neo4j-websocket-server"
+    and can be downloaded using git by executing
+    'git clone https://github.com/iisys-hof/neo4j-websocket-server.git'.
+    In the server's root source directory you will find a file called 'README'
+    explaining how to build it, set it up and configure it.
+
+    The Java server routines for Apache Shindig ca be found at
+    "https://github.com/iisys-hof/shindig-websocket-serverroutines"
+    and can be downloaded using git by executing
+    'git clone https://github.com/iisys-hof/shindig-websocket-serverroutines.git'.
+    In the projects's root source directory you will find a file called 'README'
+    explaining how to build it and add these server routines to the server you
+    set up.
+
+
+  Installing and configuring for Apache Shindig deployment:
+
+    1. Extract an Apache Shindig war file
+
+    2. Copy the WebSocket backend jar and all its dependencies into the folder
+      "WEB-INF/lib/". Pay attention to duplicate libraries.
+
+      If you don't know how to collect the library jars, there is a section
+      in the file "pom.xml" started by "uncomment to generate library
+      directory". If you uncomment it and run a build ("mvn install" for
+      example), there will be an additional "lib/" directory in the "target"
+      directory. (Eclipse may show an error after doing this, but it will work
+      with maven).
+
+    3. Open the file "WEB-INF/web.xml"
+
+    4. Find the section "<context-param>
+                          <param-name>guice-modules</param-name>
+                          <param-value>"
+
+    5. (optional) for extended functionality, i.e. graph specific requests,
+      user creation, friendship handling and extended organization model
+      replace "org.apache.shindig.social.core.config.SocialApiGuiceModule"
+      with "org.apache.shindig.social.websockbackend.GraphAPIModule"
+
+    6. replace "org.apache.shindig.social.sample.SampleModule"
+      with "org.apache.shindig.social.websockbackend.GuiceModule"
+
+    7. Get a copy of the file "websocket-backend.properties" and open it with a
+      WYSIWYG editor. If you can't locate the file, there is a copy in the
+      folder "src/main/resources/" of the sources.
+
+    8. Configure according to the next section called
+      "websocket-backend.properties" and put the file in Shindig's
+      "WEB-INF/classes" directory.
+
+    9. Repackage Shindig's war file and deploy it.
+
+
+  websocket-backend.properties:
+
+    websocket.uri0 - primary WebSocket URI, should point to the Neo4j WebSocket
+                    Server you prepared
+
+    websocket.uri{n} - (optional) additional WebSocket URIs in case you set up
+                      a server cluster
+
+    websocket.connections - number of connections per server; more connections
+                            to a server can improve performance in scenarios
+                            with many parallel requests
+
+    websocket.format - format to send and receive data in; this should match
+                      your server's configuration
+
+    websocket.compression - whether to use compression for the connection;
+                          this should match your server's configuration
+
+    websocket.auth.user - (optional) user name to use for authentication
+                         only if the websocket server requires it
+
+    websocket.auth.password - (optional) password to use for authentication
+                             only if the websocket server requires it
+                             can be either plain or hashed - for instructions
+                             on how to hash a password, see the documentation
+                             for 'neo4j-websocket-client'
+
+    websocket.auth.password.hashed - (optional) whether the password provided
+                                    is already hashed or not
+
+    people.profileurl - (optional) needed for automatic profile URL generation,
+                        ${ID} will be replaced by the user's ID
+
+    people.infourl - (optional) needed for automatic JSON profile URL
+                    generation, ${ID} will be replaced by the user's ID
+
+    The other properties are used by components that have not yet been
+    implemented for the WebSocket-based backend.
+
+
+  Using Neo4j Neo4j WebSocket backend for Apache Shindig
+  ------------------------------------------------------
+
+  Maven dependencies:
+
+  	<dependency>
+  		<groupId>de.hofuniversity.iisys</groupId>
+  		<artifactId>shindig-websocket-client</artifactId>
+  		<version>2.5.0-update1</version>
+  	</dependency>
+
+  	<dependency>
+  		<groupId>de.hofuniversity.iisys</groupId>
+  		<artifactId>shindig-websocket-common</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+
+
+  Shindig's default OpenSocial services will work as specified.
+  However, the deprecated ActivityService is not included.
+  The client will connect to your server on Shindig's initialization.
+
+
+  Extended functionality:
+
+    If you enabled extended functionality, the following functionalities will
+    be available.
+
+    Extended person/organization model
+
+      The following additional properties will be available for people's
+      organizations:
+
+      - managerId - (String) - the person's manager's ID
+
+      - secretaryId - (String) - the person's secretary's ID
+
+      - department - (String) - the person's department
+
+      - departmentHead - (boolean) - whether the person is head of department
+
+
+    Person service:
+
+      The following additional API functions will be available among the
+      existing ones:
+
+        get - (modified) by supplying "@friendrequests" as the group ID you can
+              see who sent you a friend request - returns a list of people
+
+        create - (new) enables you to either create a person (default, returns
+                the person)
+                or request/confirm a friendship by supplying "@friends" as the
+                group ID (returns nothing)
+                takes a person object as a parameter (new person or the target)
+
+        delete - (new) enables you to either delete/deactivate a person
+                (default, no actual function yet)
+                or deny/terminate a friendship by supplying "@friends" as the
+                group ID
+
+      Furthermore you will be able to filter people by all their fields by
+      filtering by the field "@all".
+
+    User/Graph service (name: "user"):
+
+      This new service offers basic graph-based and user-centric
+      functionalities:
+
+        getAll - returns a list of all available/visible people
+          REST path:
+            "user/"
+
+        getFof - returns a list of friends of friends up to a certain depth
+          REST path:
+            "user/{userId}+/fof/{depth}/{unknown}"
+
+          parameters:
+            "depth" - how deep to traverse friendships (default: 2 (hops))
+            "unknown" - whether to only return people the user is not yet
+                        friends with (default: true)
+
+        getSFriend - returns a list of friend suggestions
+          REST path:
+            "user/{userId}+/sfriend/{minFriends}"
+
+          parameters:
+            "minFriends" - how many friends the suggested people need to have
+                          in common with you
+
+        getSGroup - returns a list of group suggestions
+          REST path:
+            "user/{userId}+/sgroup/{minFriends}"
+
+          parameters:
+            "minFriends" - how many friends need to be in the suggested groups
+
+
+        getSPath - returns the shortest path defined by friendships between the
+                  user and another person (list of people)
+          REST path:
+            "user/{userId}+/spath/{targetId}"
+
+          parameters:
+            "targetId" - who to return the shortest path to
+
+
+  Known Issues
+  ------------
+
+  Newer versions of Apache Tomcat have their own WebSockets library which
+  conflicts with a library included as Tyrus' dependecy. This causes the server
+  to throw an Exception saying "... not a subclass of ...". For these Tomcat
+  versions (tested with Tomcat 7.0.50) this can be fixed by removing the file
+  '${CONTEXT}/WEB-INF/lib/javax.websocket-api-1.0.jar'. However, this file is
+  needed for earlier Tomcat versions (probably below 7.0.42).
+
+  Furthermore, when all Tyrus libraries are deleted, the connector will
+  automatically use Tomcat's WebSocket libraries. But during our tests
+  connections to the WebSocket server have been unstable. The connection is
+  possibly terminated if unused for a certain amount of time which is not being
+  properly detected yet.
+
+
+  Missing features
+  ----------------
+
+  A rudimentary Cypher-based implementation of the services is also included
+  which would eliminate the need for server-side Java procedures. It is,
+  however, far from complete and not fully tested and thus deactivated.
+  The source files are located in the package
+  "org.apache.shindig.social.websockbackend.spi.cypher".
