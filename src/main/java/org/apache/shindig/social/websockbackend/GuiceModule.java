@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend;
 
@@ -37,9 +35,13 @@ import org.apache.shindig.social.opensocial.spi.MediaItemService;
 import org.apache.shindig.social.opensocial.spi.MessageService;
 import org.apache.shindig.social.opensocial.spi.PersonService;
 import org.apache.shindig.social.sample.oauth.SampleOAuthDataStore;
+import org.apache.shindig.social.websockbackend.events.LoggingListener;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
+import org.apache.shindig.social.websockbackend.events.ShindigEventType;
 import org.apache.shindig.social.websockbackend.spi.IExtPersonService;
 import org.apache.shindig.social.websockbackend.spi.IFriendService;
 import org.apache.shindig.social.websockbackend.spi.IGraphService;
+import org.apache.shindig.social.websockbackend.spi.ISkillService;
 import org.apache.shindig.social.websockbackend.spi.WsNativeActivitySPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeActivityStreamSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeAlbumSPI;
@@ -50,6 +52,7 @@ import org.apache.shindig.social.websockbackend.spi.WsNativeGroupSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeMediaItemSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeMessageSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativePersonSPI;
+import org.apache.shindig.social.websockbackend.spi.WsNativeSkillSPI;
 import org.apache.shindig.social.websockbackend.spi.cypher.WsCypherActivitySPI;
 import org.apache.shindig.social.websockbackend.spi.cypher.WsCypherActivityStreamSPI;
 import org.apache.shindig.social.websockbackend.spi.cypher.WsCypherGraphSPI;
@@ -78,18 +81,17 @@ public class GuiceModule extends AbstractModule {
   private static final String WEBSOCKET_COMP = "websocket.compression";
 
   private static final String QUERY_TIMEOUT = "websocket.query.timeout";
-  
+
   private static final String BACKEND_IMPL = "shindig.backend.implementation";
 
   private static final String AUTH_USER = "websocket.auth.user";
   private static final String AUTH_PASS = "websocket.auth.password";
-  private static final String AUTH_PASS_HASH =
-          "websocket.auth.password.hashed";
+  private static final String AUTH_PASS_HASH = "websocket.auth.password.hashed";
 
   @Override
   protected void configure() {
     final Logger logger = Logger.getLogger(GuiceModule.SUBSYSTEM_NAME);
-    
+
     try {
       final WebsockConfig config = bindConnector();
 
@@ -99,36 +101,41 @@ public class GuiceModule extends AbstractModule {
               "sampledata/canonicaldb.json");
 
       // bind the graph back-end
-      String implementation = config.getProperty(BACKEND_IMPL);
-      
-      if(implementation != null
-              && implementation.equals("cypher"))
-      {
-        //Cypher version (incomplete)
+      final String implementation = config.getProperty(GuiceModule.BACKEND_IMPL);
+
+      // create the event bus
+      final ShindigEventBus eventBus = new ShindigEventBus(config);
+      bind(ShindigEventBus.class).toInstance(eventBus);
+
+      // event debug logging
+      final LoggingListener logListener = new LoggingListener(config);
+      eventBus.addListener(ShindigEventType.ALL, logListener);
+
+      if (implementation != null && implementation.equals("cypher")) {
+        // Cypher version (incomplete)
         logger.info("binding Cypher back-end routines");
-        
+
         // official services
         this.bind(ActivityService.class).to(WsCypherActivitySPI.class);
         this.bind(ActivityStreamService.class).to(WsCypherActivityStreamSPI.class);
         this.bind(GroupService.class).to(WsCypherGroupSPI.class);
         this.bind(MessageService.class).to(WsCypherMessageSPI.class);
         this.bind(PersonService.class).to(WsCypherPersonSPI.class);
-        
+
         // own services
         this.bind(IExtPersonService.class).to(WsCypherPersonSPI.class);
         this.bind(IGraphService.class).to(WsCypherGraphSPI.class);
 
-        //services that do not have a Cypher implementation yet
+        // services that do not have a Cypher implementation yet
         this.bind(IFriendService.class).to(WsNativeFriendSPI.class);
+        this.bind(ISkillService.class).to(WsNativeSkillSPI.class);
         this.bind(AlbumService.class).to(WsNativeAlbumSPI.class);
         this.bind(AppDataService.class).to(WsNativeAppDataSPI.class);
         this.bind(MediaItemService.class).to(WsNativeMediaItemSPI.class);
-      }
-      else
-      {
-        //Native version
+      } else {
+        // Native version
         logger.info("binding native back-end routines");
-        
+
         // official services
         this.bind(ActivityService.class).to(WsNativeActivitySPI.class);
         this.bind(ActivityStreamService.class).to(WsNativeActivityStreamSPI.class);
@@ -143,6 +150,7 @@ public class GuiceModule extends AbstractModule {
         this.bind(IExtPersonService.class).to(WsNativePersonSPI.class);
         this.bind(IFriendService.class).to(WsNativeFriendSPI.class);
         this.bind(IGraphService.class).to(WsNativeGraphSPI.class);
+        this.bind(ISkillService.class).to(WsNativeSkillSPI.class);
       }
 
       // TODO:?
@@ -237,7 +245,7 @@ public class GuiceModule extends AbstractModule {
     } else {
       throw new Exception("there needs to be at least one connection per URI");
     }
-    
+
     return config;
   }
 }

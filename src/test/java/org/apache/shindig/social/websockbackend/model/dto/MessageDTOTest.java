@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.model.dto;
 
@@ -28,6 +26,8 @@ import org.apache.shindig.social.opensocial.model.Url;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 /**
  * Test for the message converter class.
@@ -46,11 +46,16 @@ public class MessageDTOTest {
   private static final Long UPDATED = System.currentTimeMillis();
   private static final String[] RECIPIENTS = { "ID1", "ID2", "ID3" };
   private static final String[] URLS = { "URL1", "URL2", "URL3" };
+  private static final String[] URL_TYPES = { "TYPE1", "TYPE2", "TYPE3" };
+  private static final String[] URL_TEXTS = { "TEXT1", "TEXT2", "TEXT3" };
 
   private static final String COLL1_ID = "collection 1", COLL2_ID = "collection 2";
   private static final String STATUS = Message.Status.NEW.name();
 
   private static final String REPLY1_ID = "reply 1", REPLY2_ID = "reply 2";
+
+  private static final String URL_TYPES_FIELD = "urls_types";
+  private static final String URL_TEXTS_FIELD = "urls_linkTexts";
 
   private Map<String, Object> fMessageNode;
 
@@ -74,7 +79,10 @@ public class MessageDTOTest {
     this.fMessageNode.put(Message.Field.TIME_SENT.toString(), MessageDTOTest.TIME);
     this.fMessageNode.put(Message.Field.UPDATED.toString(), MessageDTOTest.UPDATED);
     this.fMessageNode.put(Message.Field.RECIPIENTS.toString(), MessageDTOTest.RECIPIENTS);
-    this.fMessageNode.put(Message.Field.URLS.toString(), MessageDTOTest.URLS);
+
+    this.fMessageNode.put(Message.Field.URLS.toString(), Lists.newArrayList(MessageDTOTest.URLS));
+    this.fMessageNode.put(URL_TYPES_FIELD, Lists.newArrayList(MessageDTOTest.URL_TYPES));
+    this.fMessageNode.put(URL_TEXTS_FIELD, Lists.newArrayList(MessageDTOTest.URL_TEXTS));
 
     // collections
     this.fMessageNode.put(Message.Field.STATUS.toString(), MessageDTOTest.STATUS);
@@ -118,15 +126,25 @@ public class MessageDTOTest {
     boolean url3 = false;
     final List<Url> urls = m.getUrls();
     String value = null;
+    String type = null;
+    String text = null;
 
     for (final Url url : urls) {
       value = url.getValue();
+      type = url.getType();
+      text = url.getLinkText();
 
-      if (value.equals("URL1")) {
+      if (value.equals("URL1")
+        && type.equals("TYPE1")
+        && text.equals("TEXT1")) {
         url1 = true;
-      } else if (value.equals("URL2")) {
+      } else if (value.equals("URL2")
+        && type.equals("TYPE2")
+        && text.equals("TEXT2")) {
         url2 = true;
-      } else if (value.equals("URL3")) {
+      } else if (value.equals("URL3")
+        && type.equals("TYPE3")
+        && text.equals("TEXT3")) {
         url3 = true;
       }
     }
@@ -167,7 +185,13 @@ public class MessageDTOTest {
     final String[] recipients = (String[]) newMess.get(Message.Field.RECIPIENTS.toString());
     Assert.assertArrayEquals(MessageDTOTest.RECIPIENTS, recipients);
 
-    final String[] urls = (String[]) newMess.get(Message.Field.URLS.toString());
+    String[] urls = (String[]) newMess.get(Message.Field.URLS.toString());
     Assert.assertArrayEquals(MessageDTOTest.URLS, urls);
+
+    urls = (String[]) newMess.get(URL_TYPES_FIELD);
+    Assert.assertArrayEquals(MessageDTOTest.URL_TYPES, urls);
+
+    urls = (String[]) newMess.get(URL_TEXTS_FIELD);
+    Assert.assertArrayEquals(MessageDTOTest.URL_TEXTS, urls);
   }
 }

@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.spi;
 
@@ -32,6 +30,8 @@ import org.apache.shindig.social.opensocial.model.MessageCollection;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.UserId;
 import org.apache.shindig.social.websockbackend.Constants;
+import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -105,7 +105,9 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final Future<RestfulCollection<MessageCollection>> colls = messageSPI.getMessageCollections(
@@ -155,7 +157,9 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final MessageCollection msgCollection = new MessageCollectionImpl();
@@ -190,7 +194,9 @@ public class WsNativeMessageSPITest {
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, new WebsockQuery(
             EQueryType.SUCCESS));
-    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final MessageCollection msgCollection = new MessageCollectionImpl();
@@ -216,7 +222,9 @@ public class WsNativeMessageSPITest {
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, new WebsockQuery(
             EQueryType.SUCCESS));
-    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     messageSPI.deleteMessageCollection(new UserId(UserId.Type.userId,
@@ -248,7 +256,9 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config, new ShindigEventBus(
+            config));
 
     // retrieve all
     Future<RestfulCollection<Message>> messColl = messageSPI.getMessages(new UserId(
@@ -289,7 +299,7 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     qHandler = new TestQueryHandler(exQuery, exResult);
-    messageSPI = new WsNativeMessageSPI(qHandler);
+    messageSPI = new WsNativeMessageSPI(qHandler, config, new ShindigEventBus(config));
 
     // execute
     messColl = messageSPI.getMessages(
@@ -334,7 +344,7 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     qHandler = new TestQueryHandler(exQuery, exResult);
-    messageSPI = new WsNativeMessageSPI(qHandler);
+    messageSPI = new WsNativeMessageSPI(qHandler, config, new ShindigEventBus(config));
 
     // execute
 
@@ -383,11 +393,13 @@ public class WsNativeMessageSPITest {
     exQuery.setParameter(ShindigNativeQueries.MESSAGE_OBJECT, msgObj);
 
     // construct expected result
-    final SingleResult exResult = new SingleResult(null);
+    final SingleResult exResult = new SingleResult(msgObj);
 
     // create single-use handler and service
     IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config, new ShindigEventBus(
+            config));
 
     // sending to single person
     List<String> recipients = new ArrayList<String>();
@@ -418,7 +430,7 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     qHandler = new TestQueryHandler(exQuery, exResult);
-    messageSPI = new WsNativeMessageSPI(qHandler);
+    messageSPI = new WsNativeMessageSPI(qHandler, config, new ShindigEventBus(config));
 
     // execute
     recipients = new ArrayList<String>();
@@ -456,7 +468,9 @@ public class WsNativeMessageSPITest {
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, new WebsockQuery(
             EQueryType.SUCCESS));
-    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final Message message = new MessageImpl();
@@ -494,7 +508,9 @@ public class WsNativeMessageSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeMessageSPI messageSPI = new WsNativeMessageSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // delete from out box
     messageSPI.deleteMessages(new UserId(UserId.Type.userId, WsNativeMessageSPITest.JANE_ID),

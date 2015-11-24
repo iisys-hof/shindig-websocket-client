@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.spi;
 
@@ -38,6 +36,10 @@ import org.apache.shindig.social.opensocial.spi.ActivityStreamService;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.GroupId;
 import org.apache.shindig.social.opensocial.spi.UserId;
+import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.BasicEvent;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
+import org.apache.shindig.social.websockbackend.events.ShindigEventType;
 import org.apache.shindig.social.websockbackend.model.dto.ActivityEntryDTO;
 import org.apache.shindig.social.websockbackend.util.CollOptsConverter;
 
@@ -61,24 +63,46 @@ import de.hofuniversity.iisys.neo4j.websock.shindig.ShindigNativeQueries;
 public class WsNativeActivityStreamSPI implements ActivityStreamService {
   private static final String PUBLISHED_FIELD = ActivityEntry.Field.PUBLISHED.toString();
 
+  private static final String EVENTS_ENABLED = "shindig.events.enabled";
+
   private final IQueryHandler fQueryHandler;
+
+  private final ShindigEventBus fEventBus;
+
+  private final boolean fFireEvents;
 
   private final Logger fLogger;
 
   /**
    * Creates a websocket activity stream service using the given query handler to dispatch queries
-   * to a remote server. Throws a NullPointerException if the given query handler is null.
+   * to a remote server. Throws a NullPointerException if any parameter is null.
    *
+   * @param config
+   *          configuration object to use
    * @param qHandler
    *          query handler to use
+   * @param eventBus
+   *          event bus to fire events on
    */
   @Inject
-  public WsNativeActivityStreamSPI(IQueryHandler qHandler) {
+  public WsNativeActivityStreamSPI(WebsockConfig config, IQueryHandler qHandler,
+          ShindigEventBus eventBus) {
+    if (config == null) {
+      throw new NullPointerException("configuration object was null was null");
+    }
     if (qHandler == null) {
       throw new NullPointerException("Query handler was null");
     }
+    if (eventBus == null) {
+      throw new NullPointerException("event bus was null");
+    }
 
     this.fQueryHandler = qHandler;
+    this.fEventBus = eventBus;
+
+    this.fFireEvents = Boolean.parseBoolean(config
+            .getProperty(WsNativeActivityStreamSPI.EVENTS_ENABLED));
+
     this.fLogger = Logger.getLogger(this.getClass().getName());
   }
 
@@ -273,6 +297,19 @@ public class WsNativeActivityStreamSPI implements ActivityStreamService {
           Set<String> activityIds, SecurityToken token) throws ProtocolException {
     String group = null;
 
+    // for events: retrieve entries before they are deleted
+    List<ActivityEntry> entries = null;
+    if (this.fFireEvents) {
+      try {
+        entries = this
+                .getActivityEntries(userId, groupId, appId, null, new CollectionOptions(),
+                        activityIds, token).get().getList();
+      } catch (final Exception e) {
+        // nop
+      }
+    }
+
+    // trigger deletion
     if (groupId != null) {
       // actual group
       if (groupId.getType() == GroupId.Type.objectId) {
@@ -305,6 +342,34 @@ public class WsNativeActivityStreamSPI implements ActivityStreamService {
               "could not delete activity entries", e);
     }
 
+    // fire events
+    if (this.fFireEvents && entries != null) {
+      try {
+        // prepare additional metadata
+        final Map<String, String> props = new HashMap<String, String>();
+        if (token != null) {
+          props.put("userId", userId.getUserId(token));
+        } else {
+          props.put("userId", userId.getUserId());
+        }
+        if (groupId != null) {
+          props.put("groupId", groupId.getObjectId().toString());
+        }
+        props.put("appId", appId);
+
+        // fire event for each entry
+        for (final ActivityEntry e : entries) {
+          final BasicEvent event = new BasicEvent(ShindigEventType.ACTIVITY_DELETED);
+          event.setPayload(e);
+          event.setToken(token);
+          event.setProperties(props);
+          this.fEventBus.fireEvent(event);
+        }
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
+    }
+
     return Futures.immediateFuture(null);
   }
 
@@ -312,7 +377,7 @@ public class WsNativeActivityStreamSPI implements ActivityStreamService {
   public Future<ActivityEntry> updateActivityEntry(UserId userId, GroupId groupId, String appId,
           Set<String> fields, ActivityEntry activity, String activityId, SecurityToken token)
           throws ProtocolException {
-
+    // update activity entry
     String group = null;
 
     if (groupId != null) {
@@ -355,7 +420,35 @@ public class WsNativeActivityStreamSPI implements ActivityStreamService {
 
     // execute query
     final IQueryCallback result = this.fQueryHandler.sendQuery(query);
-    return convertSingle(result, fields);
+    final Future<ActivityEntry> updatedEntry = convertSingle(result, fields);
+
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        // prepare additional metadata
+        final Map<String, String> props = new HashMap<String, String>();
+        if (token != null) {
+          props.put("userId", userId.getUserId(token));
+        } else {
+          props.put("userId", userId.getUserId());
+        }
+        if (groupId != null) {
+          props.put("groupId", groupId.getObjectId().toString());
+        }
+        props.put("appId", appId);
+
+        // fire event
+        final BasicEvent event = new BasicEvent(ShindigEventType.ACTIVITY_UPDATED);
+        event.setPayload(updatedEntry.get());
+        event.setToken(token);
+        event.setProperties(props);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
+    }
+
+    return updatedEntry;
   }
 
   @Override
@@ -400,6 +493,31 @@ public class WsNativeActivityStreamSPI implements ActivityStreamService {
     }
 
     final IQueryCallback result = this.fQueryHandler.sendQuery(query);
-    return convertSingle(result, fields);
+    final Future<ActivityEntry> newEntry = convertSingle(result, fields);
+
+    try {
+      // prepare additional metadata
+      final Map<String, String> props = new HashMap<String, String>();
+      if (token != null) {
+        props.put("userId", userId.getUserId(token));
+      } else {
+        props.put("userId", userId.getUserId());
+      }
+      if (groupId != null) {
+        props.put("groupId", groupId.getObjectId().toString());
+      }
+      props.put("appId", appId);
+
+      // fire event
+      final BasicEvent event = new BasicEvent(ShindigEventType.ACTIVITY_CREATED);
+      event.setPayload(newEntry.get());
+      event.setToken(token);
+      event.setProperties(props);
+      this.fEventBus.fireEvent(event);
+    } catch (final Exception e) {
+      this.fLogger.log(Level.WARNING, "failed to send event", e);
+    }
+
+    return newEntry;
   }
 }

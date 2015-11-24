@@ -1,19 +1,3 @@
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
 
                       Neo4j WebSocket backend for Apache Shindig
 
@@ -31,7 +15,7 @@
     1.7 or above.
 
   Apache Shindig:
-    2.5.0-update1
+    2.5.2
 
   Neo4j WebSocket common resources for Apache Shindig:
     shindig-websocket-common
@@ -191,13 +175,13 @@
   	<dependency>
   		<groupId>de.hofuniversity.iisys</groupId>
   		<artifactId>shindig-websocket-client</artifactId>
-  		<version>2.5.0-update1</version>
+  		<version>2.5.2-6</version>
   	</dependency>
 
   	<dependency>
   		<groupId>de.hofuniversity.iisys</groupId>
   		<artifactId>shindig-websocket-common</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
+  		<version>2.5.2-2</version>
   	</dependency>
 
 
@@ -223,6 +207,10 @@
       - department - (String) - the person's department
 
       - departmentHead - (boolean) - whether the person is head of department
+
+      - orgUnit - (String) - name of the person's organizational unit
+
+      - location - (String) - location of the person in the company (i.e. room)
 
 
     Person service:
@@ -255,6 +243,9 @@
         getAll - returns a list of all available/visible people
           REST path:
             "user/"
+          additional features:
+          	filtering by "@all" fill search all of a person's fields
+          	filtering by "@skills" will search for people with matchings skills
 
         getFof - returns a list of friends of friends up to a certain depth
           REST path:
@@ -288,6 +279,56 @@
 
           parameters:
             "targetId" - who to return the shortest path to
+
+    Skill management service (name: "skills"):
+
+      This new service offers basic skill management functionalities:
+
+        getSkills - returns skills linked to a person and the people who linked
+                   them to that person
+          REST path (GET):
+            "skills/{userId}"
+
+        addSkill - links a skill to the specified person in the name of the
+            current viewer
+          REST path (POST):
+            "skills/{userId}/{skill}"
+
+          parameters:
+            "skill" - name of the skill to link to the person
+
+        removeSkill - removes a link to a skill from the specified person in
+            the name of the current viewer
+          REST path (DELETE):
+            "skills/{userId}/{skill}"
+
+          parameters:
+            "skill" - name of the skill to link to the person
+
+    Autocompletion service (name: "autocomplete"):
+
+      This new service offers autocompletion for text fragments:
+
+        getSkillAutocomp - returns an autocompletion attempt for a given text
+                          fragment or all skills
+          REST path:
+            "autocomplete/skills?fragment=..."
+
+          parameters:
+            "fragment" - optional text fragment to autocomplete
+
+	Event system:
+
+	  An system is included which fires events over a central event bus.
+	  You can register an "IEventListener" by having the "ShindigEventBus"
+	  injected into your implementation via Google Guice.
+	  An IShindigEvent contains the handled object, an ActivityEntry for
+	  example, as its payload and may contain additional metadata.
+	  A list of all event types is availabe in "ShindigEventType".
+	  Currently supported events:
+	  	person/profile created/updated/deleted
+	  	activity entry created/updated/deleted
+	  	message created/updated/deleted
 
 
   Known Issues

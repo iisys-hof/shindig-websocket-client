@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.spi;
 
@@ -35,6 +33,7 @@ import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.GroupId;
 import org.apache.shindig.social.opensocial.spi.UserId;
 import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -111,7 +110,9 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final Future<Person> horstFut = personSPI.getPerson(new UserId(UserId.Type.userId,
@@ -152,7 +153,9 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    final WebsockConfig config = new WebsockConfig(true);
+    WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, config, new ShindigEventBus(
+            config));
 
     // execute
     // IDs (self)
@@ -208,7 +211,7 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     qHandler = new TestQueryHandler(exQuery, exResult);
-    personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    personSPI = new WsNativePersonSPI(qHandler, config, new ShindigEventBus(config));
 
     // execute
     idSet.clear();
@@ -256,7 +259,7 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     qHandler = new TestQueryHandler(exQuery, exResult);
-    personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    personSPI = new WsNativePersonSPI(qHandler, config, new ShindigEventBus(config));
 
     // execute
     gId = new GroupId(GroupId.Type.all, null);
@@ -304,7 +307,7 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     qHandler = new TestQueryHandler(exQuery, exResult);
-    personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    personSPI = new WsNativePersonSPI(qHandler, config, new ShindigEventBus(config));
 
     // execute
     idSet.clear();
@@ -357,7 +360,9 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final Person person = new PersonImpl();
@@ -399,7 +404,9 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     final Person p = new PersonImpl();
     p.setId(WsNativePersonSPITest.FRED_ID);
@@ -439,7 +446,9 @@ public class WsNativePersonSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final Future<RestfulCollection<Person>> resFut = personSPI.getAllPeople(
@@ -473,7 +482,9 @@ public class WsNativePersonSPITest {
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, new WebsockQuery(
             EQueryType.SUCCESS));
-    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, new WebsockConfig(true));
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativePersonSPI personSPI = new WsNativePersonSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     personSPI.deletePerson(new UserId(UserId.Type.userId, WsNativePersonSPITest.HORST_ID), null);

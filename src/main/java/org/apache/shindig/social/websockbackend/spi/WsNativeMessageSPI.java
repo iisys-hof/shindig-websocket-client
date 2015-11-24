@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.spi;
 
@@ -38,6 +36,10 @@ import org.apache.shindig.social.opensocial.model.MessageCollection;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.MessageService;
 import org.apache.shindig.social.opensocial.spi.UserId;
+import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.BasicEvent;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
+import org.apache.shindig.social.websockbackend.events.ShindigEventType;
 import org.apache.shindig.social.websockbackend.model.dto.MessageCollectionDTO;
 import org.apache.shindig.social.websockbackend.model.dto.MessageDTO;
 import org.apache.shindig.social.websockbackend.util.CollOptsConverter;
@@ -63,8 +65,15 @@ public class WsNativeMessageSPI implements MessageService {
   private static final String ID_FIELD = MessageCollection.Field.ID.toString();
   private static final String TITLE_FIELD = MessageCollection.Field.TITLE.toString();
 
+  private static final String EVENTS_ENABLED = "shindig.events.enabled";
+
   private final IQueryHandler fQueryHandler;
+
+  private final ShindigEventBus fEventBus;
+
   private final Logger fLogger;
+
+  private final boolean fFireEvents;
 
   /**
    * Creates a graph person service using the given query handler to dispatch queries to a remote
@@ -72,15 +81,28 @@ public class WsNativeMessageSPI implements MessageService {
    *
    * @param qHandler
    *          query handler to use
+   * @param config
+   *          configuration object to use
+   * @param eventBus
+   *          event bus to fire events to
    */
   @Inject
-  public WsNativeMessageSPI(IQueryHandler qHandler) {
+  public WsNativeMessageSPI(IQueryHandler qHandler, WebsockConfig config, ShindigEventBus eventBus) {
     if (qHandler == null) {
       throw new NullPointerException("query handler was null");
     }
+    if (config == null) {
+      throw new NullPointerException("configuration object was null");
+    }
+    if (eventBus == null) {
+      throw new NullPointerException("event bus was null");
+    }
 
     this.fQueryHandler = qHandler;
+    this.fEventBus = eventBus;
     this.fLogger = Logger.getLogger(this.getClass().getName());
+
+    this.fFireEvents = Boolean.parseBoolean(config.getProperty(WsNativeMessageSPI.EVENTS_ENABLED));
   }
 
   @Override
@@ -305,12 +327,13 @@ public class WsNativeMessageSPI implements MessageService {
   @Override
   public Future<Void> createMessage(UserId userId, String appId, String msgCollId, Message message,
           SecurityToken token) throws ProtocolException {
-    final Date time = new Date(System.currentTimeMillis());
-    message.setTimeSent(time);
-    message.setUpdated(time);
+    // set by the server
+    // final Date time = new Date(System.currentTimeMillis());
+    // message.setTimeSent(time);
+    // message.setUpdated(time);
 
     final Map<String, Object> msgMap = new HashMap<String, Object>();
-    final MessageDTO dto = new MessageDTO(msgMap);
+    MessageDTO dto = new MessageDTO(msgMap);
     dto.setData(message);
     dto.stripNullValues();
 
@@ -329,12 +352,42 @@ public class WsNativeMessageSPI implements MessageService {
     query.setParameter(ShindigNativeQueries.MESSAGE_OBJECT, msgMap);
 
     try {
-      this.fQueryHandler.sendQuery(query).get();
+      final IQueryCallback callback = this.fQueryHandler.sendQuery(query);
+      final SingleResult result = (SingleResult) callback.get();
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> resMap = (Map<String, Object>) result.getResults();
+      dto = new MessageDTO(resMap);
     } catch (final Exception e) {
       e.printStackTrace();
       this.fLogger.log(Level.SEVERE, "server error", e);
       throw new ProtocolException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
               "could not create message", e);
+    }
+
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        // prepare additional metadata
+        final Map<String, String> props = new HashMap<String, String>();
+        if (token != null) {
+          props.put("userId", userId.getUserId(token));
+        } else {
+          props.put("userId", userId.getUserId());
+        }
+        props.put("messageCollectionId", msgCollId);
+        props.put("appId", appId);
+
+        // TODO: infer recipients?
+
+        // send event
+        final BasicEvent event = new BasicEvent(ShindigEventType.MESSAGE_CREATED);
+        event.setPayload(dto);
+        event.setToken(token);
+        event.setProperties(props);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
     }
 
     return Futures.immediateFuture(null);
@@ -343,6 +396,17 @@ public class WsNativeMessageSPI implements MessageService {
   @Override
   public Future<Void> deleteMessages(UserId userId, String msgCollId, List<String> ids,
           SecurityToken token) throws ProtocolException {
+    // get messages before they're deleted
+    List<Message> messages = null;
+    if (this.fFireEvents) {
+      try {
+        messages = this.getMessages(userId, msgCollId, null, ids, new CollectionOptions(), token)
+                .get().getList();
+      } catch (final Exception e) {
+        // nop
+      }
+    }
+
     // create query
     final WebsockQuery query = new WebsockQuery(EQueryType.PROCEDURE_CALL);
     query.setPayload(ShindigNativeQueries.DELETE_MESSAGES_QUERY);
@@ -359,6 +423,32 @@ public class WsNativeMessageSPI implements MessageService {
       this.fLogger.log(Level.SEVERE, "server error", e);
       throw new ProtocolException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
               "could not delete messages", e);
+    }
+
+    // fire event
+    if (this.fFireEvents && messages != null) {
+      try {
+        // prepare additional metadata
+        final Map<String, String> props = new HashMap<String, String>();
+        if (token != null) {
+          props.put("userId", userId.getUserId(token));
+        } else {
+          props.put("userId", userId.getUserId());
+        }
+        props.put("messageCollectionId", msgCollId);
+
+        // send event for each message
+        for (final Message m : messages) {
+          // TODO: how to tell where message was deleted (everywhere or just one place)
+          final BasicEvent event = new BasicEvent(ShindigEventType.MESSAGE_DELETED);
+          event.setPayload(m);
+          event.setToken(token);
+          event.setProperties(props);
+          this.fEventBus.fireEvent(event);
+        }
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
     }
 
     return Futures.immediateFuture(null);
@@ -393,6 +483,40 @@ public class WsNativeMessageSPI implements MessageService {
       this.fLogger.log(Level.SEVERE, "server error", e);
       throw new ProtocolException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
               "could not modify message", e);
+    }
+
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        // get modified message
+        final List<String> msgIds = new ArrayList<String>();
+        msgIds.add(message.getId());
+        final List<Message> msgs = this
+                .getMessages(userId, msgCollId, null, msgIds, new CollectionOptions(), token).get()
+                .getList();
+
+        // send event
+        if (msgs.size() > 0) {
+          // prepare additional metadata
+          final Map<String, String> props = new HashMap<String, String>();
+          if (token != null) {
+            props.put("userId", userId.getUserId(token));
+          } else {
+            props.put("userId", userId.getUserId());
+          }
+          props.put("messageCollectionId", msgCollId);
+
+          // fire event
+          final Message newMess = msgs.get(0);
+
+          final BasicEvent event = new BasicEvent(ShindigEventType.MESSAGE_UPDATED);
+          event.setPayload(newMess);
+          event.setToken(token);
+          this.fEventBus.fireEvent(event);
+        }
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
     }
 
     return Futures.immediateCheckedFuture(null);

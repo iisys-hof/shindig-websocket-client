@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.model;
 
@@ -48,6 +46,16 @@ public interface IExtOrganization extends Organization {
    * department.
    */
   public static final String DEPARTMENT_HEAD_FIELD = "departmentHead";
+
+  /**
+   * Name of the field containing the organizational unit the user is in.
+   */
+  public static final String ORG_UNIT_FIELD = "orgUnit";
+
+  /**
+   * Name of the field containing the organizational unit the user is in.
+   */
+  public static final String LOCATION_FIELD = "location";
 
   /**
    * @return a person's manager's ID in the system
@@ -92,4 +100,26 @@ public interface IExtOrganization extends Organization {
    *          whether the person is head of the department
    */
   public void setDepartmentHead(Boolean departmentHead);
+
+  /**
+   * @return the organizational unit the user is in
+   */
+  public String getOrgUnit();
+
+  /**
+   * @param orgUnit
+   *          the new organizational unit the user is in
+   */
+  public void setOrgUnit(String orgUnit);
+
+  /**
+   * @return user's location in the company (i.e. room number)
+   */
+  public String getLocation();
+
+  /**
+   * @param location
+   *          user's new location in the company
+   */
+  public void setLocation(String location);
 }

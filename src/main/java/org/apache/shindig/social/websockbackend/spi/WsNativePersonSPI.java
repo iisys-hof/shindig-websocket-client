@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.spi;
 
@@ -42,6 +40,9 @@ import org.apache.shindig.social.opensocial.spi.GroupId;
 import org.apache.shindig.social.opensocial.spi.UserId;
 import org.apache.shindig.social.websockbackend.Constants;
 import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.BasicEvent;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
+import org.apache.shindig.social.websockbackend.events.ShindigEventType;
 import org.apache.shindig.social.websockbackend.model.dto.PersonDTO;
 import org.apache.shindig.social.websockbackend.util.CollOptsConverter;
 
@@ -63,6 +64,7 @@ import de.hofuniversity.iisys.neo4j.websock.shindig.ShindigNativeQueries;
  */
 @Singleton
 public class WsNativePersonSPI implements IExtPersonService {
+  private static final String EVENTS_ENABLED = "shindig.events.enabled";
   private static final String PROFILE_URL_PROP = "people.profileurl";
   private static final String INFO_URL_PROP = "people.infourl";
   private static final String ID_VAR = "${ID}";
@@ -73,10 +75,17 @@ public class WsNativePersonSPI implements IExtPersonService {
   private static final String PROFILE_URL_FIELD = Person.Field.PROFILE_URL.toString();
   private static final String INFO_URL_FIELD = "infoUrl";
 
+  private static final String BY_SKILLS_FILTER = "@skills";
+
   private final IQueryHandler fQueryHandler;
+
+  private final ShindigEventBus fEventBus;
+
   private final Logger fLogger;
 
   private final String fProfileUrl, fInfoUrl;
+
+  private final boolean fFireEvents;
 
   /**
    * Creates a graph person service using the given query handler to dispatch queries to a remote
@@ -87,21 +96,29 @@ public class WsNativePersonSPI implements IExtPersonService {
    *          query handler to use
    * @param config
    *          configuration object to use
+   * @param eventBus
+   *          event bus to fire events to
    */
   @Inject
-  public WsNativePersonSPI(IQueryHandler qHandler, WebsockConfig config) {
+  public WsNativePersonSPI(IQueryHandler qHandler, WebsockConfig config, ShindigEventBus eventBus) {
     if (qHandler == null) {
       throw new NullPointerException("query handler was null");
     }
     if (config == null) {
       throw new NullPointerException("configuration object was null");
     }
+    if (eventBus == null) {
+      throw new NullPointerException("event bus was null");
+    }
 
     this.fQueryHandler = qHandler;
+    this.fEventBus = eventBus;
     this.fLogger = Logger.getLogger(this.getClass().getName());
 
     this.fProfileUrl = config.getProperty(WsNativePersonSPI.PROFILE_URL_PROP);
     this.fInfoUrl = config.getProperty(WsNativePersonSPI.INFO_URL_PROP);
+
+    this.fFireEvents = Boolean.parseBoolean(config.getProperty(WsNativePersonSPI.EVENTS_ENABLED));
   }
 
   private PersonDTO convertPerson(Map<String, Object> person, Set<String> fields,
@@ -308,6 +325,20 @@ public class WsNativePersonSPI implements IExtPersonService {
     personMap = (Map<String, Object>) sResult.getResults();
 
     final PersonDTO resultPerson = convertPerson(personMap, null, token);
+
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        // fire event
+        final BasicEvent event = new BasicEvent(ShindigEventType.PROFILE_UPDATED);
+        event.setPayload(resultPerson);
+        event.setToken(token);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
+    }
+
     return Futures.immediateFuture((Person) resultPerson);
   }
 
@@ -325,7 +356,14 @@ public class WsNativePersonSPI implements IExtPersonService {
 
     // create query
     final WebsockQuery query = new WebsockQuery(EQueryType.PROCEDURE_CALL);
-    query.setPayload(ShindigNativeQueries.GET_ALL_PEOPLE_QUERY);
+
+    // special case: get people by skill
+    if (WsNativePersonSPI.BY_SKILLS_FILTER.equals(options.getFilter())) {
+      query.setPayload(ShindigNativeQueries.GET_PEOPLE_BY_SKILL_QUERY);
+      query.setParameter(ShindigNativeQueries.SKILL, options.getFilterValue());
+    } else {
+      query.setPayload(ShindigNativeQueries.GET_ALL_PEOPLE_QUERY);
+    }
 
     // set options
     CollOptsConverter.convert(options, query);
@@ -376,6 +414,19 @@ public class WsNativePersonSPI implements IExtPersonService {
     personMap = (Map<String, Object>) sResult.getResults();
 
     final PersonDTO resultPerson = convertPerson(personMap, null, token);
+
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        final BasicEvent event = new BasicEvent(ShindigEventType.PROFILE_CREATED);
+        event.setPayload(resultPerson);
+        event.setToken(token);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
+    }
+
     return Futures.immediateFuture((Person) resultPerson);
   }
 
@@ -389,6 +440,16 @@ public class WsNativePersonSPI implements IExtPersonService {
     // "User '" + viewer + "' does not have enough privileges "
     // + "to delete this user");
     // }
+
+    // get person for event before it is deleted
+    Future<Person> oldPerson = null;
+    if (this.fFireEvents) {
+      try {
+        oldPerson = this.getPerson(id, null, token);
+      } catch (final Exception e) {
+        // nop
+      }
+    }
 
     // create query
     final WebsockQuery query = new WebsockQuery(EQueryType.PROCEDURE_CALL);
@@ -406,6 +467,18 @@ public class WsNativePersonSPI implements IExtPersonService {
       this.fLogger.log(Level.SEVERE, "server error", e);
       throw new ProtocolException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
               "could not delete person", e);
+    }
+
+    // fire event
+    if (this.fFireEvents && oldPerson != null) {
+      try {
+        final BasicEvent event = new BasicEvent(ShindigEventType.PROFILE_DELETED);
+        event.setPayload(oldPerson.get());
+        event.setToken(token);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
     }
 
     return Futures.immediateFuture(null);

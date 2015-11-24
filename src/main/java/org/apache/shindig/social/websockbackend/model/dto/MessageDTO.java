@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ *  Copyright 2015 Institute of Information Systems, Hof University
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  under the License.
  */
 package org.apache.shindig.social.websockbackend.model.dto;
 
@@ -45,6 +43,8 @@ public class MessageDTO extends ADataTransferObject implements Message {
   private static final String UPDATED_FIELD = Message.Field.UPDATED.toString();
   private static final String RECIPIENTS_FIELD = Message.Field.RECIPIENTS.toString();
   private static final String URLS_FIELD = Message.Field.URLS.toString();
+  private static final String URL_TYPES_FIELD = "urls_types";
+  private static final String URL_TEXTS_FIELD = "urls_linkTexts";
 
   private static final String STATUS_FIELD = Message.Field.STATUS.toString();
   private static final String COLL_IDS_FIELD = Message.Field.COLLECTION_IDS.toString();
@@ -297,17 +297,36 @@ public class MessageDTO extends ADataTransferObject implements Message {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public List<Url> getUrls() {
     List<Url> urls = null;
-    final String[] urlStrings = (String[]) this.fProperties.get(MessageDTO.URLS_FIELD);
+
+    // primary values
+    final List<String> urlStrings = (List<String>) this.fProperties.get(MessageDTO.URLS_FIELD);
+
+    // optional types
+    final List<String> urlTypes = (List<String>) this.fProperties.get(MessageDTO.URL_TYPES_FIELD);
+
+    // optional display Texts
+    final List<String> urlTexts = (List<String>) this.fProperties.get(MessageDTO.URL_TEXTS_FIELD);
 
     if (urlStrings != null) {
       urls = new ArrayList<Url>();
       Url tempUrl = null;
+
+      int index = 0;
       for (final String string : urlStrings) {
         tempUrl = new UrlImpl();
-        tempUrl.setLinkText(string);
         tempUrl.setValue(string);
+
+        if (urlTypes != null && urlTypes.size() > index) {
+          tempUrl.setType(urlTypes.get(index));
+        }
+        if (urlTexts != null && urlTexts.size() > index) {
+          tempUrl.setLinkText(urlTexts.get(index));
+        }
+
+        ++index;
         urls.add(tempUrl);
       }
     }
@@ -319,14 +338,23 @@ public class MessageDTO extends ADataTransferObject implements Message {
     if (urls != null) {
       int index = 0;
       final String[] urlArr = new String[urls.size()];
+      final String[] urlTypes = new String[urls.size()];
+      final String[] urlTexts = new String[urls.size()];
 
       for (final Url url : urls) {
-        urlArr[index++] = url.getValue();
+        urlArr[index] = url.getValue();
+        urlTypes[index] = url.getType();
+        urlTexts[index] = url.getLinkText();
+        index++;
       }
 
       this.fProperties.put(MessageDTO.URLS_FIELD, urlArr);
+      this.fProperties.put(MessageDTO.URL_TYPES_FIELD, urlTypes);
+      this.fProperties.put(MessageDTO.URL_TEXTS_FIELD, urlTexts);
     } else {
       this.fProperties.put(MessageDTO.URLS_FIELD, null);
+      this.fProperties.put(MessageDTO.URL_TYPES_FIELD, null);
+      this.fProperties.put(MessageDTO.URL_TEXTS_FIELD, null);
     }
   }
 
