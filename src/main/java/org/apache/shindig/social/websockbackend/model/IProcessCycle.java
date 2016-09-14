@@ -14,24 +14,33 @@
  *  limitations under the License.
  *  under the License.
  */
-package org.apache.shindig.social.websockbackend.events;
+package org.apache.shindig.social.websockbackend.model;
 
-/**
- * List of internal event types.
- */
-public enum ShindigEventType {
-  // "listen to all events"
-  ALL,
+import java.util.Date;
+import java.util.List;
 
-  // person service
-  PROFILE_CREATED, PROFILE_UPDATED, PROFILE_DELETED,
+import com.google.inject.ImplementedBy;
 
-  // activitystreams service
-  ACTIVITY_CREATED, ACTIVITY_UPDATED, ACTIVITY_DELETED,
+@ImplementedBy(ProcessCycleImpl.class)
+public interface IProcessCycle {
 
-  // message service
-  MESSAGE_SENT, MESSAGE_CREATED, MESSAGE_UPDATED, MESSAGE_DELETED,
-  
-  // skill service
-  SKILL_ADDED, SKILL_REMOVED;
+  public String getType();
+
+  public void setType(String docType);
+
+  public String getDocId();
+
+  public void setDocId(String docId);
+
+  public Date getStartDate();
+
+  public void setStartDate(Date start);
+
+  public Date getEndDate();
+
+  public void setEndDate(Date end);
+
+  public List<String> getUserList();
+
+  public void setUserList(List<String> userList);
 }

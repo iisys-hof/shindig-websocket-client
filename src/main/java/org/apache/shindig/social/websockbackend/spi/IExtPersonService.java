@@ -16,6 +16,7 @@
  */
 package org.apache.shindig.social.websockbackend.spi;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -26,6 +27,7 @@ import org.apache.shindig.social.opensocial.model.Person;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.PersonService;
 import org.apache.shindig.social.opensocial.spi.UserId;
+import org.apache.shindig.social.websockbackend.model.dto.PersonDTO;
 
 /**
  * Extended version of shindig's person service with the additional methods to create users and get
@@ -75,4 +77,17 @@ public interface IExtPersonService extends PersonService {
    *           if user deletion fails
    */
   public Future<Void> deletePerson(UserId id, SecurityToken token) throws ProtocolException;
+
+  /**
+   * Converts a person map to a transferable data object. The given map may not be null.
+   *
+   * @param person
+   *          map representing a person
+   * @param fields
+   *          fields to copy
+   * @param token
+   *          security token from the request
+   * @return transferable person object
+   */
+  public PersonDTO convertPerson(Map<String, Object> person, Set<String> fields, SecurityToken token);
 }

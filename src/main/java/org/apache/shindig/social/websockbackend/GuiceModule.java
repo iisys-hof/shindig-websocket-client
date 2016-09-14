@@ -38,9 +38,12 @@ import org.apache.shindig.social.sample.oauth.SampleOAuthDataStore;
 import org.apache.shindig.social.websockbackend.events.LoggingListener;
 import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
 import org.apache.shindig.social.websockbackend.events.ShindigEventType;
+import org.apache.shindig.social.websockbackend.spi.IExtMessageService;
 import org.apache.shindig.social.websockbackend.spi.IExtPersonService;
 import org.apache.shindig.social.websockbackend.spi.IFriendService;
 import org.apache.shindig.social.websockbackend.spi.IGraphService;
+import org.apache.shindig.social.websockbackend.spi.IOrganizationService;
+import org.apache.shindig.social.websockbackend.spi.IProcessMiningService;
 import org.apache.shindig.social.websockbackend.spi.ISkillService;
 import org.apache.shindig.social.websockbackend.spi.WsNativeActivitySPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeActivityStreamSPI;
@@ -51,7 +54,9 @@ import org.apache.shindig.social.websockbackend.spi.WsNativeGraphSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeGroupSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeMediaItemSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeMessageSPI;
+import org.apache.shindig.social.websockbackend.spi.WsNativeOrganizationService;
 import org.apache.shindig.social.websockbackend.spi.WsNativePersonSPI;
+import org.apache.shindig.social.websockbackend.spi.WsNativeProcessMiningSPI;
 import org.apache.shindig.social.websockbackend.spi.WsNativeSkillSPI;
 import org.apache.shindig.social.websockbackend.spi.cypher.WsCypherActivitySPI;
 import org.apache.shindig.social.websockbackend.spi.cypher.WsCypherActivityStreamSPI;
@@ -144,6 +149,7 @@ public class GuiceModule extends AbstractModule {
         this.bind(GroupService.class).to(WsNativeGroupSPI.class);
         this.bind(MediaItemService.class).to(WsNativeMediaItemSPI.class);
         this.bind(MessageService.class).to(WsNativeMessageSPI.class);
+        this.bind(IExtMessageService.class).to(WsNativeMessageSPI.class);
         this.bind(PersonService.class).to(WsNativePersonSPI.class);
 
         // own services
@@ -151,6 +157,8 @@ public class GuiceModule extends AbstractModule {
         this.bind(IFriendService.class).to(WsNativeFriendSPI.class);
         this.bind(IGraphService.class).to(WsNativeGraphSPI.class);
         this.bind(ISkillService.class).to(WsNativeSkillSPI.class);
+        this.bind(IOrganizationService.class).to(WsNativeOrganizationService.class);
+        this.bind(IProcessMiningService.class).to(WsNativeProcessMiningSPI.class);
       }
 
       // TODO:?

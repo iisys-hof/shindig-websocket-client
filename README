@@ -317,6 +317,19 @@
           parameters:
             "fragment" - optional text fragment to autocomplete
 
+    Organization service (name: "organization"):
+
+      This new service offers information about organizations and their
+      	hierarchy:
+
+        getHierarchyPath - returns the hierarchical path between two people
+          REST path:
+            "organization/{userId}/hierarchypath/{targetId}"
+
+          parameters:
+            "targetId" - who to return the hierarchical path to
+
+
 	Event system:
 
 	  An system is included which fires events over a central event bus.

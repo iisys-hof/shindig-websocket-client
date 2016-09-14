@@ -121,8 +121,8 @@ public class WsNativePersonSPI implements IExtPersonService {
     this.fFireEvents = Boolean.parseBoolean(config.getProperty(WsNativePersonSPI.EVENTS_ENABLED));
   }
 
-  private PersonDTO convertPerson(Map<String, Object> person, Set<String> fields,
-          SecurityToken token) {
+  @Override
+  public PersonDTO convertPerson(Map<String, Object> person, Set<String> fields, SecurityToken token) {
     final String id = person.get(WsNativePersonSPI.ID_FIELD).toString();
     final PersonDTO dto = new PersonDTO(person);
 

@@ -611,4 +611,10 @@ public class WsCypherPersonSPI implements IExtPersonService {
     // retrieve stored person
     return getPerson(new UserId(UserId.Type.userId, person.getId()), null, token);
   }
+
+  @Override
+  public PersonDTO convertPerson(Map<String, Object> person, Set<String> fields, SecurityToken token) {
+    // not used in this implementation
+    return null;
+  }
 }

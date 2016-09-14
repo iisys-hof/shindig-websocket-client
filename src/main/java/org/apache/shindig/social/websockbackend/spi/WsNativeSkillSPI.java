@@ -30,6 +30,10 @@ import org.apache.shindig.protocol.ProtocolException;
 import org.apache.shindig.protocol.RestfulCollection;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.UserId;
+import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.BasicEvent;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
+import org.apache.shindig.social.websockbackend.events.ShindigEventType;
 import org.apache.shindig.social.websockbackend.model.ISkillSet;
 import org.apache.shindig.social.websockbackend.model.dto.SkillSetDTO;
 import org.apache.shindig.social.websockbackend.util.CollOptsConverter;
@@ -49,11 +53,17 @@ import de.hofuniversity.iisys.neo4j.websock.shindig.ShindigNativeQueries;
  * a websocket.
  */
 public class WsNativeSkillSPI implements ISkillService {
+  private static final String EVENTS_ENABLED = "shindig.events.enabled";
 
   private static final String NAME_FIELD = "name";
 
   private final IQueryHandler fQueryHandler;
+  
+  private final ShindigEventBus fEventBus;
+  
   private final Logger fLogger;
+
+  private final boolean fFireEvents;
 
   /**
    * Creates a graph skill service using the given query handler to dispatch queries to a remote
@@ -63,13 +73,23 @@ public class WsNativeSkillSPI implements ISkillService {
    *          query handler to use
    */
   @Inject
-  public WsNativeSkillSPI(IQueryHandler qHandler) {
+  public WsNativeSkillSPI(IQueryHandler qHandler, WebsockConfig config,
+      ShindigEventBus eventBus) {
     if (qHandler == null) {
       throw new NullPointerException("query handler was null");
     }
+    if (config == null) {
+      throw new NullPointerException("configuration object was null");
+    }
+    if (eventBus == null) {
+      throw new NullPointerException("event bus was null");
+    }
 
     this.fQueryHandler = qHandler;
+    this.fEventBus = eventBus;
     this.fLogger = Logger.getLogger(this.getClass().getName());
+
+    this.fFireEvents = Boolean.parseBoolean(config.getProperty(WsNativeSkillSPI.EVENTS_ENABLED));
   }
 
   @Override
@@ -195,6 +215,22 @@ public class WsNativeSkillSPI implements ISkillService {
       throw new ProtocolException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
               "failed to execute query", e);
     }
+    
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        // fire event
+        final BasicEvent event = new BasicEvent(ShindigEventType.SKILL_ADDED);
+        
+        String[] params = {userId.getUserId(token), skill};
+        event.setPayload(params);
+
+        event.setToken(token);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
+    }
 
     return Futures.immediateFuture(null);
   }
@@ -228,6 +264,22 @@ public class WsNativeSkillSPI implements ISkillService {
       this.fLogger.log(Level.SEVERE, "server error", e);
       throw new ProtocolException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
               "failed to execute query", e);
+    }
+
+    // fire event
+    if (this.fFireEvents) {
+      try {
+        // fire event
+        final BasicEvent event = new BasicEvent(ShindigEventType.SKILL_REMOVED);
+        
+        String[] params = {userId.getUserId(token), skill};
+        event.setPayload(params);
+
+        event.setToken(token);
+        this.fEventBus.fireEvent(event);
+      } catch (final Exception e) {
+        this.fLogger.log(Level.WARNING, "failed to send event", e);
+      }
     }
 
     return Futures.immediateFuture(null);

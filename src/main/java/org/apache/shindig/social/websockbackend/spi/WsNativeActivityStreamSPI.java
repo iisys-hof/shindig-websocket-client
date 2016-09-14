@@ -470,6 +470,7 @@ public class WsNativeActivityStreamSPI implements ActivityStreamService {
     // set time stamp
     if (activity.getPublished() == null || activity.getPublished().isEmpty()) {
       activity.setPublished(DateUtil.formatIso8601Date(System.currentTimeMillis()));
+      // TODO: maybe set additional unix timestamp for easier handling
     }
 
     // create query

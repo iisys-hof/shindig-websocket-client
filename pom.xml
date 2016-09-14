@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.hofuniversity.iisys</groupId>
   <artifactId>shindig-websocket-client</artifactId>
-  <version>2.5.2-6</version>
+  <version>2.5.2-11</version>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -35,11 +35,13 @@
   		<groupId>org.apache.shindig</groupId>
   		<artifactId>shindig-social-api</artifactId>
   		<version>2.5.2</version>
+  		<scope>provided</scope>
   	</dependency>
   	<dependency>
   		<groupId>com.google.inject</groupId>
   		<artifactId>guice</artifactId>
   		<version>3.0</version>
+  		<scope>provided</scope>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.shindig</groupId>
@@ -58,16 +60,17 @@
   		<groupId>org.apache.shindig</groupId>
   		<artifactId>shindig-gadgets</artifactId>
   		<version>2.5.2</version>
+  		<scope>provided</scope>
   	</dependency>
   	<dependency>
   		<groupId>de.hofuniversity.iisys</groupId>
   		<artifactId>neo4j-websocket-client</artifactId>
-  		<version>0.5.1</version>
+  		<version>0.5.2</version>
   	</dependency>
   	<dependency>
   		<groupId>de.hofuniversity.iisys</groupId>
   		<artifactId>neo4j-websocket-client</artifactId>
-  		<version>0.5.1</version>
+  		<version>0.5.2</version>
   		<scope>test</scope>
   		<type>test-jar</type>
   	</dependency>
@@ -75,11 +78,12 @@
   		<groupId>javax.servlet</groupId>
   		<artifactId>servlet-api</artifactId>
   		<version>2.5</version>
+  		<scope>provided</scope>
   	</dependency>
   	<dependency>
   		<groupId>de.hofuniversity.iisys</groupId>
   		<artifactId>shindig-websocket-common</artifactId>
-  		<version>2.5.2-2</version>
+  		<version>2.5.2-4</version>
   	</dependency>
   </dependencies>
 
@@ -97,6 +101,7 @@
                         <goal>copy-dependencies</goal>
                     </goals>
                     <configuration>
+						<includeScope>runtime</includeScope>
                         <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         <overWriteReleases>false</overWriteReleases>
                         <overWriteSnapshots>false</overWriteSnapshots>

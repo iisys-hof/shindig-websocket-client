@@ -362,6 +362,23 @@ public class OrganizationDTO extends ADataTransferObject implements IExtOrganiza
     this.fProperties.put(IExtOrganization.LOCATION_FIELD, location);
   }
 
+  @Override
+  public String getSite() {
+    String site = null;
+    final Object value = this.fProperties.get(IExtOrganization.SITE_FIELD);
+
+    if (value != null) {
+      site = (String) value;
+    }
+
+    return site;
+  }
+
+  @Override
+  public void setSite(String site) {
+    this.fProperties.put(IExtOrganization.SITE_FIELD, site);
+  }
+
   /**
    * Sets the properties of this data transfer object to those of the given object. If the given
    * Object is null, all data is cleared.
@@ -406,6 +423,7 @@ public class OrganizationDTO extends ADataTransferObject implements IExtOrganiza
       this.fProperties.put(IExtOrganization.SECRETARY_ID_FIELD, eOrg.getSecretaryId());
       this.fProperties.put(IExtOrganization.ORG_UNIT_FIELD, eOrg.getOrgUnit());
       this.fProperties.put(IExtOrganization.LOCATION_FIELD, eOrg.getLocation());
+      this.fProperties.put(IExtOrganization.SITE_FIELD, eOrg.getSite());
     }
 
     // address

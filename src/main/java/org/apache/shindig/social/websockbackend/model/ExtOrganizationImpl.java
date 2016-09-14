@@ -29,6 +29,7 @@ public class ExtOrganizationImpl extends OrganizationImpl implements IExtOrganiz
   private Boolean departmentHead;
   private String orgUnit;
   private String location;
+  private String site;
 
   @Override
   public String getManagerId() {
@@ -88,5 +89,15 @@ public class ExtOrganizationImpl extends OrganizationImpl implements IExtOrganiz
   @Override
   public void setLocation(String location) {
     this.location = location;
+  }
+
+  @Override
+  public String getSite() {
+    return site;
+  }
+
+  @Override
+  public void setSite(String site) {
+    this.site = site;
   }
 }

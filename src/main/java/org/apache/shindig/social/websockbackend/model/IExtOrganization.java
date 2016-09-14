@@ -53,9 +53,14 @@ public interface IExtOrganization extends Organization {
   public static final String ORG_UNIT_FIELD = "orgUnit";
 
   /**
-   * Name of the field containing the organizational unit the user is in.
+   * Name of the field containing the location the user is in.
    */
   public static final String LOCATION_FIELD = "location";
+
+  /**
+   * Name of the field containing the site the user is at.
+   */
+  public static final String SITE_FIELD = "site";
 
   /**
    * @return a person's manager's ID in the system
@@ -122,4 +127,15 @@ public interface IExtOrganization extends Organization {
    *          user's new location in the company
    */
   public void setLocation(String location);
+
+  /**
+   * @return user's company site
+   */
+  public String getSite();
+
+  /**
+   * @param site
+   *          user's new company site
+   */
+  public void setSite(String site);
 }

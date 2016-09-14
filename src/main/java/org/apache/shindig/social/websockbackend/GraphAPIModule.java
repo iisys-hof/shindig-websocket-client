@@ -19,11 +19,16 @@ package org.apache.shindig.social.websockbackend;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.websocket.MessageHandler;
+
 import org.apache.shindig.social.core.config.SocialApiGuiceModule;
 import org.apache.shindig.social.opensocial.service.GroupHandler;
 import org.apache.shindig.social.opensocial.service.PersonHandler;
 import org.apache.shindig.social.websockbackend.service.AutoCompleteHandler;
+import org.apache.shindig.social.websockbackend.service.ExtMessageHandler;
 import org.apache.shindig.social.websockbackend.service.ExtPersonHandler;
+import org.apache.shindig.social.websockbackend.service.OrganizationHandler;
+import org.apache.shindig.social.websockbackend.service.ProcessMiningHandler;
 import org.apache.shindig.social.websockbackend.service.SkillHandler;
 import org.apache.shindig.social.websockbackend.service.UserHandler;
 
@@ -47,9 +52,18 @@ public class GraphAPIModule extends SocialApiGuiceModule {
     // autocompletion handler
     handlers.add(AutoCompleteHandler.class);
 
+    // organization handler
+    handlers.add(OrganizationHandler.class);
+
+    // process mining handler
+    handlers.add(ProcessMiningHandler.class);
+
     // replacements
     handlers.remove(PersonHandler.class);
     handlers.add(ExtPersonHandler.class);
+
+    handlers.remove(MessageHandler.class);
+    handlers.add(ExtMessageHandler.class);
 
     return handlers;
   }

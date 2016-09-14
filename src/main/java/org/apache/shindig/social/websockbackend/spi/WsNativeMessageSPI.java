@@ -34,7 +34,6 @@ import org.apache.shindig.protocol.RestfulCollection;
 import org.apache.shindig.social.opensocial.model.Message;
 import org.apache.shindig.social.opensocial.model.MessageCollection;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
-import org.apache.shindig.social.opensocial.spi.MessageService;
 import org.apache.shindig.social.opensocial.spi.UserId;
 import org.apache.shindig.social.websockbackend.WebsockConfig;
 import org.apache.shindig.social.websockbackend.events.BasicEvent;
@@ -61,7 +60,7 @@ import de.hofuniversity.iisys.neo4j.websock.shindig.ShindigNativeQueries;
  * from a remote Neo4j graph database over a websocket.
  */
 @Singleton
-public class WsNativeMessageSPI implements MessageService {
+public class WsNativeMessageSPI implements IExtMessageService {
   private static final String ID_FIELD = MessageCollection.Field.ID.toString();
   private static final String TITLE_FIELD = MessageCollection.Field.TITLE.toString();
 
@@ -325,8 +324,8 @@ public class WsNativeMessageSPI implements MessageService {
   }
 
   @Override
-  public Future<Void> createMessage(UserId userId, String appId, String msgCollId, Message message,
-          SecurityToken token) throws ProtocolException {
+  public Future<Message> createAndReturnMessage(UserId userId, String appId, String msgCollId,
+          Message message, SecurityToken token) throws ProtocolException {
     // set by the server
     // final Date time = new Date(System.currentTimeMillis());
     // message.setTimeSent(time);
@@ -388,6 +387,19 @@ public class WsNativeMessageSPI implements MessageService {
       } catch (final Exception e) {
         this.fLogger.log(Level.WARNING, "failed to send event", e);
       }
+    }
+
+    final Message msg = dto;
+    return Futures.immediateFuture(msg);
+  }
+
+  @Override
+  public Future<Void> createMessage(UserId userId, String appId, String msgCollId, Message message,
+          SecurityToken token) throws ProtocolException {
+    try {
+      createAndReturnMessage(userId, appId, msgCollId, message, token).get();
+    } catch (final Exception e) {
+      e.printStackTrace();
     }
 
     return Futures.immediateFuture(null);

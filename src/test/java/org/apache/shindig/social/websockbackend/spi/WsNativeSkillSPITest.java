@@ -26,6 +26,8 @@ import org.apache.shindig.social.opensocial.model.Person;
 import org.apache.shindig.social.opensocial.spi.CollectionOptions;
 import org.apache.shindig.social.opensocial.spi.UserId;
 import org.apache.shindig.social.opensocial.spi.UserId.Type;
+import org.apache.shindig.social.websockbackend.WebsockConfig;
+import org.apache.shindig.social.websockbackend.events.ShindigEventBus;
 import org.apache.shindig.social.websockbackend.model.ISkillSet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -98,7 +100,9 @@ public class WsNativeSkillSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final List<String> results = skillSPI.getSkillAutocomp("a p", new CollectionOptions(), null)
@@ -130,7 +134,9 @@ public class WsNativeSkillSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     final List<ISkillSet> result = skillSPI
@@ -181,7 +187,9 @@ public class WsNativeSkillSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     skillSPI.addSkill(new UserId(Type.userId, WsNativeSkillSPITest.JOHN_ID),
@@ -211,7 +219,9 @@ public class WsNativeSkillSPITest {
 
     // create single-use handler and service
     final IQueryHandler qHandler = new TestQueryHandler(exQuery, exResult);
-    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler);
+    final WebsockConfig config = new WebsockConfig(true);
+    final WsNativeSkillSPI skillSPI = new WsNativeSkillSPI(qHandler, config,
+            new ShindigEventBus(config));
 
     // execute
     skillSPI.removeSkill(new UserId(Type.userId, WsNativeSkillSPITest.JOHN_ID),
